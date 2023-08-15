@@ -1,0 +1,32 @@
+body{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    background-color: #fff;
+}
+div.game{
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+canvas{
+    margin: 2px;
+}
+
+div.actions{
+    display: flex;
+    height: 50px;
+    justify-content: center;
+    align-items: center;
+}
+
+div.actions button {
+    background-color:#0a0a23;
+    color: #fff;
+    border:none;
+    border-radius:20px;
+    padding: 10px 15px;
+    margin: 4px;
+}
