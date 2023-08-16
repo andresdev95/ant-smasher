@@ -234,7 +234,9 @@ class GameWorld {
 
         // The loop function has reached it's end
         // Keep requesting new frames
-        window.requestAnimationFrame((timeStamp) => this.gameLoop(timeStamp));
+        const fps = 60;
+        setTimeout(() => { window.requestAnimationFrame((timeStamp) => this.gameLoop(timeStamp)); }, 1000 / fps);
+        //window.requestAnimationFrame((timeStamp) => this.gameLoop(timeStamp));
     }
 
     drawTool(){
