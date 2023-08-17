@@ -24,10 +24,9 @@ class Ant extends GameObject{
     static image;
     static imageSplash;
     
-    constructor(canvas, context, x, y, vx, vy, mass, useAngle) {
+    constructor(canvas, context, x, y, vx, vy, mass) {
         super(context, x, y, vx, vy, mass);
 
-        //Set default width and height
         //this.radius = mass > 0.5 ? 25 : 10; //25;
         this.radius = 15;
 
@@ -35,7 +34,6 @@ class Ant extends GameObject{
         this.maxHeight = canvas.height;
     
         this.currentFrame = 0;
-        this.useAngle = useAngle;
 
         if (!Ant.image) {
             Ant.image = new Image();
@@ -48,11 +46,7 @@ class Ant extends GameObject{
         }
         if (!Ant.imageSplash) {
             Ant.imageSplash = new Image();
-            Ant.imageSplash.onload = () => {
-                //Define the size of a frame
-                //Ant.frameWidth = Ant.image.width / Ant.numColumns;
-                //Ant.frameHeight = Ant.image.height / Ant.numRows;
-            };
+            // Ant.imageSplash.onload = () => {};
             Ant.imageSplash.src = 'src/assets/ant-splash.png';
         }
     }
@@ -78,6 +72,8 @@ class Ant extends GameObject{
             else this.y = this.maxHeight;
             this.vy = -this.vy;
         }
+        //this.vx += ( -5 + (Math.random() * (10)));
+        //this.vy += ( -5 + (Math.random() * (10))); 
         
         this.frameCenterX = this.x;
         this.frameCenterY = this.y;
@@ -116,6 +112,9 @@ class Ant extends GameObject{
         this.x += this.vx * secondsPassed;
         this.y += this.vy * secondsPassed;
 
+        //this.x += this.vx;
+        //this.y += this.vy;
+
         let angle = Math.atan2(this.vy, this.vx);
         let degrees = 180 * angle / Math.PI;
         this.angle = (360 + Math.round(degrees)) % 360;
@@ -123,37 +122,33 @@ class Ant extends GameObject{
 }
 
 class GameWorld {
-    constructor(showCollision, showCircles, bounce, gravityAndMass, useAngle) {
+    constructor() {
         this.canvas = null;
         this.context = null;
         this.oldTimeStamp = 0;
         this.gameObjects = [];
         this.deletedAnts = [];
         this.trails = [];
-        this.showCollision = showCollision;
-        this.showCircles = showCircles;
-        this.bounce = bounce;
-        this.gravityAndMass = gravityAndMass;
-        this.useAngle = useAngle;
         this.cursorX = 0;
         this.cursorY = 0;
         this.cursorSize = 40;
         this.score = 0;
         this.stop = false;
-        this.initialAnts = 10;
+        this.dead = false;
+        this.initialAnts = 30;
+        this.maxAnts = 150;
         this.timeNewAnt = 2000; //ms
 
         this.squashSound = new Audio('src/assets/splash.mp3');
-        //this.hammerSound = new Audio('ruta/a/sonido_martillo.mp3');
-        //this.repairSound = new Audio('ruta/a/sonido_reparar.mp3');
     }
 
     init(canvasId) {
+        this.oldTimeStamp = 0;
         this.canvas = document.getElementById(canvasId);
         this.context = this.canvas.getContext('2d');
 
-        this.canvas.width = window.innerWidth - 6;
-        this.canvas.height = window.innerHeight - 100;
+        this.canvas.width = window.innerWidth - 10;
+        this.canvas.height = window.innerHeight - 80;
 
         this.cursorX = this.canvas.width / 2;
         this.cursorY = this.canvas.height / 2;
@@ -167,8 +162,8 @@ class GameWorld {
             this.useTool();
         });
 
-
         this.createWorld();
+        this.autoAddDificult();
 
         // Request an animation frame for the first time
         // The gameLoop() function will be called as a callback of this request
@@ -184,8 +179,18 @@ class GameWorld {
     }
     
     createAnt(renew){
-        this.gameObjects.push(new Ant(this.canvas, this.context, 0 + (Math.random() * this.canvas.width), 0 + (Math.random() * this.canvas.height), -50 + (Math.random() * 100), -50 + (Math.random() * 100), 15, this.useAngle));
+        this.gameObjects.push(new Ant(this.canvas, this.context, 0 + (Math.random() * this.canvas.width), 0 + (Math.random() * this.canvas.height), -25 + (Math.random() * 50), -25 + (Math.random() * 50), 15));
         if(renew && !this.stop) setTimeout(()=>{ this.createAnt(true) }, this.timeNewAnt);
+    }
+
+    autoAddDificult(){
+        this.setDificult(this.timeNewAnt-50);
+        if(this.timeNewAnt > 500 && !this.stop) setTimeout(()=>{ this.autoAddDificult(); }, 2500);
+    }
+
+    setDificult(newTime){
+        this.timeNewAnt = newTime;
+        console.log(this.timeNewAnt);
     }
 
     gameLoop(timeStamp) {
@@ -208,35 +213,43 @@ class GameWorld {
         
         this.clearCanvas();
 
+        /*let diameter = 7
+        this.context.fillStyle = '#bebebe';
+        this.trails.forEach((point, index) => {
+            this.context.beginPath();
+            this.context.arc(point.x, point.y, diameter, 0, 2 * Math.PI);
+            this.context.fill();
+        });*/
 
         this.deletedAnts.forEach((ant, index) => {
             this.context.drawImage(Ant.imageSplash, 0, 0, Ant.imageSplash.width, Ant.imageSplash.height, (ant.x - ant.radius), ant.y - ant.radius * 1.42, ant.radius * 2, ant.radius * 2.42);
         });
 
-        /*this.context.fillStyle = '#000000';
-        this.trails.forEach((point, index) => {
-            this.context.beginPath();
-            this.context.arc(point.x, point.y, 7, 0, 2 * Math.PI);
-            this.context.fill();
-        });*/
-
         for (var i = 0; i < this.gameObjects.length; i++) {
             this.gameObjects[i].draw();
-
-            /*this.trails.push({
-                x: this.gameObjects[i].x - (Math.random() * this.gameObjects[i].mass),
-                y: this.gameObjects[i].y + (Math.random() * this.gameObjects[i].mass)
-            });*/
+            
+            /*let ax = this.gameObjects[i].x - (Math.random() * this.gameObjects[i].mass);
+            let ay = this.gameObjects[i].y - (Math.random() * this.gameObjects[i].mass);
+            let newElement = { x: ax, y: ay }
+            const isDuplicate = this.trails.some(pos => this.arePositionsClose(pos, newElement, diameter / 2));
+            if(!isDuplicate) this.trails.push(newElement);*/
         }
 
         this.drawTool();
         this.drawScore();
 
+        if(this.gameObjects.length == this.maxAnts){ this.dead = true; this.stop = true; } // FIN DE JUEGO
+
         // The loop function has reached it's end
         // Keep requesting new frames
-        const fps = 60;
+        const fps = 30;
         setTimeout(() => { window.requestAnimationFrame((timeStamp) => this.gameLoop(timeStamp)); }, 1000 / fps);
         //window.requestAnimationFrame((timeStamp) => this.gameLoop(timeStamp));
+    }
+
+    arePositionsClose(pos1, pos2, radius) {
+        const distanceSquared = (pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2;
+        return distanceSquared <= radius ** 2;
     }
 
     drawTool(){
@@ -256,12 +269,18 @@ class GameWorld {
         this.context.stroke();
     }
 
-    drawScore(){
+    drawScore(){ 
         if(this.stop){
+            let texto = 'Juego finalizado';
+            let color = '#000000';
+            if(this.dead){
+                texto = 'Se ha llenado de hormigas tu pantalla x_x';
+                color = '#ff0000';
+            }
             this.context.textAlign = "center";
-            this.context.fillStyle = '#000000';
             this.context.font = '30px Arial';
-            this.context.fillText(`Juego finalizado`, this.canvas.width/2, this.canvas.height/2);
+            this.context.fillStyle = color;
+            this.context.fillText(texto, this.canvas.width/2, this.canvas.height/2);
             this.context.font = '20px Arial';
             this.context.fillText(`Puntaje: ${this.score}`, this.canvas.width/2, this.canvas.height/2 + 30);
         }else{
@@ -309,14 +328,13 @@ class GameWorld {
 }
 
 var gameWorld;
-function init(canvasId, showCollision, showCircles, bounce, gravityAndMass, useAngle){
-    gameWorld = new GameWorld(showCollision, showCircles, bounce, gravityAndMass, useAngle);
-    gameWorld.init(canvasId);
-}
-
+var isOpenInformation = false;
+const init = function(canvasId){ gameWorld = new GameWorld(); gameWorld.init(canvasId); }
 const detenerJuego = function() { if(gameWorld) gameWorld.stopGame(); }
-const reiniciarJuego = function() {
-    detenerJuego(); 
-    init('gameCanvas', true, true, true, true, true)
+const reiniciarJuego = function() { detenerJuego(); init('gameCanvas') }
+const informacion = function() { 
+    if(isOpenInformation) document.querySelector('.sidebar').classList.remove('active');
+    else document.querySelector('.sidebar').classList.add('active');
+    isOpenInformation = !isOpenInformation;
 }
 reiniciarJuego();
